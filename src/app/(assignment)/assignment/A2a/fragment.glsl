@@ -64,9 +64,12 @@ float sdBox(vec3 p, vec3 b)
 
 /////////////////////////////////////////////////////
 //// Step 1: calculate color and density from sdf
-//// You are asked to convert the negative sdf value to a vec4 with the first three components as color rgb values and the last component as density.
-//// For color, you may use the provided palette function to convert the sdf value to an rgb color.
-//// For density, we assume it is alway 1.0 inside the object (sdf < 0) and 0.0 outside the object (sdf >= 0).
+//// You are asked to convert the negative sdf value to a vec4 with
+//// the first three components as color rgb values and the last component as density.
+//// For color, you may use the provided palette function to convert the sdf value to 
+//// an rgb color.
+//// For density, we assume it is alway 1.0 inside the object (sdf < 0) and 0.0 outside 
+//// the object (sdf >= 0).
 /////////////////////////////////////////////////////
 
 vec4 readSDFVolume(vec3 p)
@@ -75,20 +78,26 @@ vec4 readSDFVolume(vec3 p)
     float distance = sdSphere(p, 1.0); 
 
     //// convert sdf value to a color
-
     //// your implementation starts
 
-    return vec4(0.0, 0.0, 0.0, 0.0);
+    vec3 color = palette(-distance); 
+    //vec3 color = palette(distance * 0.5 + 0.5); 
+    float density = distance < 0.0 ? 1.0 : 0.0;
+    return vec4(color, density);
 
     //// your implementation ends
 }
 
 /////////////////////////////////////////////////////
 //// Step 2: calculate color and density from CT data
-//// You are asked to convert the CT data to a vec4 with the first three components as color rgb values and the last component as density.
-//// For density, you should read the density value from the first component of the volumetric texture iVolume with tex_coord.
-//// For color, you should use the provided palette function to convert the density value to an rgb color.
-//// You may want to multiple the returned vec4 with a constant to enhance the visualization color.
+//// You are asked to convert the CT data to a vec4 with the first three components as 
+//// color rgb values and the last component as density.
+//// For density, you should read the density value from the first component of the 
+//// volumetric texture iVolume with tex_coord.
+//// For color, you should use the provided palette function to convert the density 
+//// value to an rgb color.
+//// You may want to multiple the returned vec4 with a constant to enhance the 
+//// visualization color.
 /////////////////////////////////////////////////////
 
 vec4 readCTVolume(vec3 p)
@@ -103,17 +112,21 @@ vec4 readCTVolume(vec3 p)
     }
 
     //// your implementation starts
-
-    return vec4(0.0, 0.0, 0.0, 0.0);
-
+    float density = texture(iVolume, tex_coord).r;
+    vec3 color = palette(density);
+    float scale = 20.0;
+    return vec4(color * scale, density);
     //// your implementation ends
 }
 
 /////////////////////////////////////////////////////
 //// Step 3: ray tracing with volumetric data
-//// You are asked to implement the front-to-back volumetric ray tracing algorithm to accummulate colors along each ray. 
-//// Your task is to accumulate color and transmittance along the ray based on the absorption-emission volumetric model.
-//// You may want to read the course slides, Equation (3) in the original NeRF paper, and the A2a document for the rendering model.
+//// You are asked to implement the front-to-back volumetric ray 
+//// tracing algorithm to accummulate colors along each ray. 
+//// Your task is to accumulate color and transmittance along the 
+//// ray based on the absorption-emission volumetric model.
+//// You may want to read the course slides, Equation (3) in the 
+//// original NeRF paper, and the A2a document for the rendering model.
 /////////////////////////////////////////////////////
 
 //// ro - ray origin, rd - ray direction, 
@@ -134,6 +147,18 @@ vec4 volumeRendering(vec3 ro, vec3 rd, float near, float far, int n_samples)
 
         //// your implementation starts
 
+        vec4 sdfVolume = readSDFVolume(p - vec3(-2.0, 0.0, 0.0)); //Sphere
+        vec4 ctVolume = readCTVolume(p - vec3(2.0, 0.0, 0.0)); //Foot (or tree)
+
+        float combinedDensity = sdfVolume.a + ctVolume.a;
+        
+        vec3 color1 = (sdfVolume.rgb * sdfVolume.a) / max(sdfVolume.a, 1.0);
+        vec3 color2 = (ctVolume.rgb * ctVolume.a) / max(ctVolume.a, 1.0);
+        vec3 combinedColor = color1 + color2;
+
+        float absorbtion = exp(-combinedDensity * stepSize);
+        color += transmittance * combinedColor * (1.0 - absorbtion);
+        transmittance *= absorbtion;
 
         //// your implementation ends
 
