@@ -42,6 +42,11 @@ const tutorials: { title: string; href: string; description: string }[] = [
     href: '/tutorial/pytorch-tutorial',
     description: 'Pytorch Tutorial',
   },
+  {
+    title: 'Mass Spring System',
+    href: '/tutorial/mass-spring-tutorial',
+    description: 'Mass Spring System',
+  }
 ];
 
 const assignments: { title: string; href: string; description: string }[] = [
@@ -95,6 +100,16 @@ const assignments: { title: string; href: string; description: string }[] = [
     href: '/assignment/A3_doc',
     description: 'A3 Document: Gaussian Splatting',
   },
+  {
+    title: 'Assignment 4 Demo',
+    href: '/assignment/A4',
+    description: 'A4 Demo: Position-based Dynamics',
+  },
+  {
+    title: 'Assignment 4 Doc',
+    href: '/assignment/A4_doc',
+    description: 'A4 Document: Position-based Dynamics',
+  }
 ];
 
 export function NavBar() {
