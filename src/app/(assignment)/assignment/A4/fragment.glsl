@@ -81,20 +81,28 @@ Spring add_spring(int a, int b, float inv_stiffness){
 const int initial_particles = 6;
 
 void init_state(void){
-    n_particles = 6;
-    n_springs = 5;
+    n_particles = 10;
+    n_springs = 7;
 
     //particle 0 is the mouse particle and will be set later
-    particles[1].pos = vec2(-0.6, 0.5); 
+    particles[1].pos = vec2(-0.6, -0.5); 
     particles[1].vel = vec2(0.0);
-    particles[2].pos = vec2(-0.3, 0.5); 
+    particles[2].pos = vec2(-0.3, -0.5); 
     particles[2].vel = vec2(0.0);
-    particles[3].pos = vec2(-0, 0.5);
+    particles[3].pos = vec2(-0, -0.5);
     particles[3].vel = vec2(0.0);
-    particles[4].pos = vec2(0.3, 0.5);
+    particles[4].pos = vec2(0.3, -0.5);
     particles[4].vel = vec2(0.0);
-    particles[5].pos = vec2(0.6, 0.5);
+    particles[5].pos = vec2(0.6, -0.5);
     particles[5].vel = vec2(0.0);
+    particles[6].pos = vec2(0.3, 0.5);
+    particles[6].vel = vec2(0.0);
+    particles[7].pos = vec2(0.3, 0.15);
+    particles[7].vel = vec2(0.0);
+    particles[8].pos = vec2(-0.3, 0.5);
+    particles[8].vel = vec2(0.0);
+    particles[9].pos = vec2(-0.3, 0.15);
+    particles[9].vel = vec2(0.0);
 
     current_add_particle = initial_particles;
 
@@ -104,6 +112,8 @@ void init_state(void){
     springs[2] = add_spring(2, 3, 1.0 / 100.0); // second to third rope particle
     springs[3] = add_spring(3, 4, 1.0 / 100.0); // third to fourth rope particle
     springs[4] = add_spring(4, 5, 1.0 / 100.0); // fourth to fifth rope particle
+    springs[5] = add_spring(6, 7, 1.0 / 100.0);
+    springs[6] = add_spring(8, 9, 1.0 / 100.0);
 }
 
 
@@ -141,7 +151,7 @@ void load_state() {
         particles[i].inv_mass = 1.0; // all particles have mass 1.0
         particles[i].is_fixed = false;
 
-        if(i==1 || i==5){
+        if(i==1 || i==5 || i==6 || i ==8){
             particles[i].inv_mass = 0.0; // fixed particles at the ends of the rope
             particles[i].is_fixed = true; // make sure the first and last particles are fixed
         }
@@ -198,7 +208,7 @@ float spring_constraint(Spring s) {
     // and L0 = s.restLength is the rest length of the spring.
 
     //// Your implementation starts
-    return 0.;
+    return length(particles[s.a].pos - particles[s.b].pos) - s.restLength;
     //// Your implementation ends
 }
 
@@ -212,7 +222,8 @@ vec2 spring_constraint_gradient(vec2 a, vec2 b) {
     // Think: what is the gradient of (a-b) with respect to a?
 
     //// Your implementation starts
-    return vec2(0.);
+    //incredibly boring answer, but I'm pretty sure this is right.
+    return normalize(a - b);
     //// Your implementation ends
 }
 
@@ -234,8 +245,11 @@ void solve_spring(Spring s, float dt) {
     float denom = 0.;
 
     //// Your implementation starts
-    vec2 grad_a = vec2(0.); // only keep for the sake of the compiler
-    vec2 grad_b = vec2(0.); // only keep for the sake of the compiler
+    vec2 grad_a = spring_constraint_grad(s, s.a);
+    vec2 grad_b = spring_constraint_grad(s, s.b);
+
+    numer = -spring_constraint(s);
+    denom = particles[s.a].inv_mass * dot(grad_a, grad_a) + particles[s.b].inv_mass * dot(grad_b, grad_b);
     //// Your implementation ends
 
     // PBD if you comment out the following line
@@ -262,7 +276,7 @@ float collision_constraint(vec2 a, vec2 b, float collision_dist){
     float dist = length(a - b);
     if(dist < collision_dist){
         //// Your implementation starts
-        return 0.0;
+        return dist - collision_dist;
         //// Your implementation ends
     }
     else{
@@ -283,7 +297,7 @@ vec2 collision_constraint_gradient(vec2 a, vec2 b, float collision_dist){
     float dist = length(a - b);
     if(dist <= collision_dist){
         //// Your implementation starts
-        return vec2(0.0);
+        return normalize(a - b);
         //// Your implementation ends
     }
     else{
@@ -305,7 +319,9 @@ void solve_collision_constraint(int i, int j, float collision_dist, float dt){
     float denom = 0.0;
 
     //// Your implementation starts
-    vec2 grad = vec2(0); // only keep for the sake of the compiler
+    vec2 grad = collision_constraint_gradient(particles[i].pos, particles[j].pos, collision_dist);
+    numer = -collision_constraint(particles[i].pos, particles[j].pos, collision_dist);
+    denom = (particles[i].inv_mass + particles[j].inv_mass) * dot(grad, grad);
     //// Your implementation ends
 
     //PBD if you comment out the following line, which is faster
@@ -333,7 +349,7 @@ float phi(vec2 p){
 float ground_constraint(vec2 p, float ground_collision_dist){
     if(phi(p) < ground_collision_dist){
         //// Your implementation starts
-        return 0.0;
+        return phi(p) - ground_collision_dist;
         //// Your implementation ends
     }
     else{
@@ -352,9 +368,8 @@ vec2 ground_constraint_gradient(vec2 p, float ground_collision_dist){
 
     if(phi(p) < ground_collision_dist){
         //// Your implementation starts
-
-        return vec2(0.0);
-        
+        const float PI = 3.14159265359;
+        return vec2(-0.1 * 2.0 * PI * cos(p.x * 2.0 * PI), 1.0);
         //// Your implementation ends
     }
     else{
@@ -376,9 +391,9 @@ void solve_ground_constraint(int i, float ground_collision_dist, float dt){
     float denom = 0.0;
 
     //// Your implementation starts
-    vec2 grad = vec2(0.); // only keep for the sake of the compiler
-
-
+    vec2 grad = ground_constraint_gradient(particles[i].pos, ground_collision_dist);
+    numer = -ground_constraint(particles[i].pos, ground_collision_dist);
+    denom = particles[i].inv_mass * dot(grad, grad);
     //// Your implementation ends
 
     //PBD if you comment out the following line, which is faster
@@ -406,9 +421,29 @@ void solve_constraints(float dt) {
 
     //// Your implementation starts
 
+    //1 spring constraints
+    for (int i = 1; i < n_springs; i++) {
+        solve_spring(springs[i], dt);
+    }
+
+    // 2 Ground constraints
+
+    for (int i = 1; i < n_particles; i++) {
+        if (!particles[i].is_fixed) {
+            solve_ground_constraint(i, ground_collision_dist, dt);
+            for (int j = i + 1; j < n_particles; j++) {
+                if (!particles[j].is_fixed) {
+                    solve_collision_constraint(i, j, collision_dist, dt);
+                }
+            }
+        }
+    }
     
 
+    // 3 Collision constraints
+    // Put in above
     //// Your implementation ends
+    
 }
 
 float dist_to_segment(vec2 p, vec2 a, vec2 b) {
@@ -423,11 +458,11 @@ float dist_to_segment(vec2 p, vec2 a, vec2 b) {
 vec3 render_scene(vec2 pixel_xy) {
     float phi = phi(pixel_xy);
     vec3 col;
-    if(phi < 0.0) {
-        col =  vec3(122, 183, 0) / 255.; // ground color
+    if(phi * phi < 0.1) {
+        col =  vec3(243, 229, 171) / 255.; // ground color
     }
     else{
-        col = vec3(229, 242, 250) / 255.; // background color
+        col = vec3(123, 63, 0) / 255.; // background color
     }
     
     float pixel_size = 2.0 / iResolution.y;
@@ -451,7 +486,7 @@ vec3 render_scene(vec2 pixel_xy) {
         min_dist = sqrt(min_dist);
 
         const float radius = 0.1;
-        col = mix(col, vec3(180, 164, 105) / 255., remap01(min_dist, radius, radius - pixel_size));
+        col = mix(col, vec3(245, 127, 142) / 255., remap01(min_dist, radius, radius - pixel_size));
     }
     
     // Render All springs
@@ -470,7 +505,7 @@ vec3 render_scene(vec2 pixel_xy) {
 
         const float thickness = 0.01;
         
-        col = mix(col, vec3(14, 105, 146) / 255., 0.25 * remap01(min_dist, thickness, thickness - pixel_size));
+        col = mix(col, vec3(245, 127, 142) / 255., 0.25 * remap01(min_dist, thickness, thickness - pixel_size));
     }
 
     // col.z = 1.0;
