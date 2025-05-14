@@ -302,7 +302,7 @@ vec3 normal(vec3 p)
 
 /////////////////////////////////////////////////////
 //// Phong shading
-/////////////////////////////////////////////////////
+//////////////// /////////////////////////////////////
 
 /////////////////////////////////////////////////////
 //// Step 6: lighting and coloring
@@ -503,15 +503,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
     vec2 uv = (fragCoord.xy - .5 * iResolution.xy) / iResolution.y;         //// screen uv
     vec3 origin = CAM_POS;                                                  //// camera position 
-    vec3 dir = normalize(vec3(uv.x, uv.y, 1));                              //// camera direction
-    float s = rayMarching(origin, dir);                                     //// ray marching
+    vec3 dir = normalize(vec3(uv.x, uv.y, 1));                 //// camera direction
+    float s = rayMarching(origin, dir);                         //// ray marching
     vec3 p = origin + dir * s;                                              //// ray-sdf intersection
     vec3 n = normal(p);                                                     //// sdf normal
     vec3 color = phong_shading2(p, n);                                       //// phong shading
     fragColor = vec4(color, 1.);                                            //// fragment color
 }
 
-void main() 
+void main()
 {
     mainImage(gl_FragColor, gl_FragCoord.xy);
 }
